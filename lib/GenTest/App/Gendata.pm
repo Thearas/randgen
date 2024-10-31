@@ -677,6 +677,7 @@ sub run {
     }
 
     $executor->currentSchema(@schema_perms[0]);
+    $executor->execute("-- randgen ddl done");
     return STATUS_OK;
 }
 

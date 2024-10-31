@@ -39,6 +39,10 @@ use GenTest::Translator::Mysqldump2pgsql;
 use Data::Dumper;
 
 
+my $ddlF;
+my $queryF;
+my $isExecutingDDL = 1;
+
 sub init {
 	my $executor = shift;
 
@@ -47,7 +51,19 @@ sub init {
 
     $executor->defaultSchema("schema");
 
+    if ($executor->dsn() =~ m/print/) {
+        system("mkdir -p ddl/") and die "unable to create 'ddl' directory";
+        system("mkdir -p query/") and die "unable to create 'query' directory";
+        open($ddlF, '>>', "ddl/ddl.sql") or die "unable to open 'ddl.sql'";
+        open($queryF, '>>', "query/query.sql") or die "unable to open 'query.sql'";
+    }
+
 	return STATUS_OK;
+}
+
+sub DESTROY {
+    close($ddlF) if $ddlF;
+    close($queryF) if $queryF;
 }
 
 sub execute {
@@ -74,13 +90,23 @@ sub execute {
             query => $query, 
             status => STATUS_WONT_HANDLE ) 
             if not $query;
-        
     }
 
-    if ($ENV{RQG_DEBUG} or $self->dsn() =~ m/print/) {
+    if ($query eq "-- randgen ddl done") {
+        $isExecutingDDL = 0;
+        return new GenTest::Result(query => $query,
+                               status => STATUS_OK);
+    }
+
+    if ($ENV{RQG_DEBUG}) {
         print "Executing $query;\n";
+    } elsif ($self->dsn() =~ m/print/) {
+        if ($isExecutingDDL == 1) {
+            print $ddlF "$query;\n";
+        } else {
+            print $queryF "$query;\n";
+        }
     }
-
 	return new GenTest::Result(query => $query,
                                status => STATUS_OK);
 }
