@@ -52,10 +52,10 @@ sub init {
     $executor->defaultSchema("schema");
 
     if ($executor->dsn() =~ m/print/) {
-        system("mkdir -p ddl/") and die "unable to create 'ddl' directory";
-        system("mkdir -p query/") and die "unable to create 'query' directory";
-        open($ddlF, '>>', "ddl/ddl.sql") or die "unable to open 'ddl.sql'";
-        open($queryF, '>>', "query/query.sql") or die "unable to open 'query.sql'";
+        system("mkdir -p output/ddl/") and die "unable to create 'ddl' directory";
+        system("mkdir -p output/query/") and die "unable to create 'query' directory";
+        open($ddlF, '>>', "output/ddl/ddl.sql") or die "unable to open 'ddl.sql'";
+        open($queryF, '>>', "output/query/query.sql") or die "unable to open 'query.sql'";
     }
 
 	return STATUS_OK;

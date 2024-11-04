@@ -653,6 +653,9 @@ my %acceptable_se_errors = (
 my ($version, $major_version);
 my $query_no = 0;
 
+my $ddlF;
+my $queryF;
+my $isExecutingDDL = 1;
 
 sub init {
     my $executor = shift;
@@ -705,6 +708,13 @@ sub init {
     $executor->setConnectionId($dbh->selectrow_arrayref("SELECT CONNECTION_ID()")->[0]);
     $executor->setCurrentUser($dbh->selectrow_arrayref("SELECT CURRENT_USER()")->[0]);
 
+    if ($executor->sqltrace) {
+        system("mkdir -p output/ddl/") and die "unable to create 'output/ddl' directory";
+        system("mkdir -p output/query/") and die "unable to create 'output/query' directory";
+        open($ddlF, '>>', "output/ddl/ddl.sql") or die "unable to open 'ddl.sql'";
+        open($queryF, '>>', "output/query/query.sql") or die "unable to open 'query.sql'";
+    }
+
     say("Executor initialized. id: ".$executor->id()."; default schema: ".$executor->defaultSchema()."; connection ID: ".$executor->connectionId()) if rqg_debug();
 
     return STATUS_OK;
@@ -743,6 +753,8 @@ sub execute {
         $query =~ s/\/\*\!\!$ver/\/\*/g;
       }
     }
+
+    my $orig_query = $query;
 
     $query .= ' /* QNO ' . (++$query_no) . ' CON_ID ' . $executor->connectionId() . ' */ ';
 
@@ -789,7 +801,14 @@ sub execute {
         if ($executor->sqltrace eq 'MarkErrors') {
             $trace_me = 1;   # Defer logging
         } else {
-            print "$trace_query;\n";
+            if ($ENV{RQG_DEBUG}) {
+                print "$trace_query;\n";
+            }
+            if ($isExecutingDDL) {
+                print $ddlF "$orig_query;\n";
+            } else {
+                print $queryF "$orig_query;\n";
+            }
         }
     }
 
@@ -846,6 +865,11 @@ sub execute {
         $performance->setExecutionTime($execution_time);
     }
 
+    if ($query =~ m/randgen ddl done/) {
+        $isExecutingDDL = 0;
+        $trace_me = 0;
+    }
+
     if ($trace_me eq 1) {
         if (defined $err) {
                 # Mark invalid queries in the trace by prefixing each line.
@@ -853,7 +877,14 @@ sub execute {
                 $trace_query =~ s/\n/\n# [sqltrace]    /g;
                 print '# [$$] [sqltrace] ERROR '.$err.": $trace_query;\n";
         } else {
-            print "[$$] $trace_query;\n";
+            if ($ENV{RQG_DEBUG}) {
+                print "[$$] $trace_query;\n";
+            }
+            if ($isExecutingDDL) {
+                print $ddlF "$orig_query;\n";
+            } else {
+                print $queryF "$orig_query;\n";
+            }
         }
     }
 
@@ -1114,6 +1145,9 @@ sub DESTROY {
 #        print Dumper $executor->[EXECUTOR_EXPLAIN_QUERIES];
         say("Statuses: ".join(', ', map { status2text($_).": ".$executor->[EXECUTOR_STATUS_COUNTS]->{$_}." queries" } keys %{$executor->[EXECUTOR_STATUS_COUNTS]}));
     }
+
+    close($ddlF) if $ddlF;
+    close($queryF) if $queryF;
 }
 
 sub currentSchema {

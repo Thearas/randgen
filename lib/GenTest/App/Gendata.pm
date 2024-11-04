@@ -183,6 +183,7 @@ sub run {
         );
 
     my $executor = GenTest::Executor->newFromDSN($self->dsn());
+    $executor->sqltrace($self->sqltrace);
     $executor->init();
 
 #  
