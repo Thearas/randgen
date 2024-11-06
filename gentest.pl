@@ -177,6 +177,8 @@ if (defined $config->logfile && defined $logger) {
 
 say("Starting: $0 ".join(" ", @ARGV_saved));
 
+system("rm -rf output/");
+
 # Pass debug server.
 $config->debug_server(\@debug_server) if @debug_server;
 $ENV{RQG_DEBUG} = 1 if defined $config->debug;
