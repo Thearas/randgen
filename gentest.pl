@@ -37,10 +37,10 @@ eval
     $logger = Log::Log4perl->get_logger('randgen.gentest');
 };
 
-my $DEFAULT_THREADS = 10;
+my $DEFAULT_THREADS = 1;
 my $DEFAULT_QUERIES = 1000;
 my $DEFAULT_DURATION = 3600;
-my $DEFAULT_DSN = 'dbi:mysql:host=127.0.0.1:port=9306:user=root:database=test';
+my $DEFAULT_DSN = 'dbi:mysql:host=127.0.0.1:port=3306:user=root:database=test';
 my @debug_server;
 
 my @ARGV_saved = @ARGV;
