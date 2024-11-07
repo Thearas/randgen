@@ -821,8 +821,13 @@ sub execute {
         );
     }
 
+    my $explain_query = $query;
+    if ($query =~ m/^\s*SELECT/i) {
+        $explain_query = "EXPLAIN $query";
+    }
+
     my $start_time = Time::HiRes::time();
-    my $sth = $dbh->prepare($query);
+    my $sth = $dbh->prepare($explain_query);
 
     if (not defined $sth) {            # Error on PREPARE
         my $errstr_prepare = $executor->normalizeError($dbh->errstr());
